@@ -1,14 +1,14 @@
 # CameraHook
-CameraHook is an example to hook and modify android camera preview.
+CameraHook is an example to hook and modify android camera preview that.
 It is just a protype and the code  may be ugly.
 
-Supported platform
+##Supported platform
 Android 2.3 - 4.4
 
 To use this tool, devices must be root.
 
-If you want to make some changes to hook.c and libhook.so has already been installed in /system/lib/, please comment a condition block in mainActivity.java as follow:
-
+If you want to make any change to hook.c while libhook.so has already been installed in /system/lib/, please comment a 'if' condition in mainActivity.java as follow:
+```java
 //if(result.length()<10) {
 
     String copySoToSystem = "cat " + so_path + " > " + "/system/lib/libhook.so \n" +
@@ -18,7 +18,7 @@ If you want to make some changes to hook.c and libhook.so has already been insta
     runLocalRootUserCommand(copySoToSystem);
     
 //}
-
+```
 If you have any question about this project, feel free to contact me. 
 
 Email: limm.hq@gmail.com
