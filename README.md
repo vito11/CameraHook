@@ -1,8 +1,9 @@
 # CameraHook
-CameraHook is an example to hook and modify android camera preview that.
+CameraHook is an example to hook and modify android camera preview.
+
 It is just a protype and the code  may be ugly.
 
-##Supported platform
+## Supported platform
 Android 2.3 - 4.4
 
 To use this tool, devices must be root.
