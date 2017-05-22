@@ -6,6 +6,7 @@ It is just a protype and the code  may be ugly.
 ## Supported platform
 Android 2.3 - 4.4
 
+## Tips
 To use this tool, devices must be root.
 
 If you want to make any change to hook.c while libhook.so has already been installed in /system/lib/, please comment a 'if' condition in mainActivity.java as follow:
