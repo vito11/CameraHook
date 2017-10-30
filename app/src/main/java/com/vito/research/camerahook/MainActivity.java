@@ -1,36 +1,43 @@
 package com.vito.research.camerahook;
 
-import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
+
 import com.github.hiteshsondhi88.libffmpeg.FFmpeg;
 import com.github.hiteshsondhi88.libffmpeg.FFmpegExecuteResponseHandler;
 import com.github.hiteshsondhi88.libffmpeg.FFmpegLoadBinaryResponseHandler;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
-public class MainActivity extends Activity implements Button.OnClickListener {
+public class MainActivity extends AppCompatActivity implements Button.OnClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     String exeFileName = "injector";
@@ -38,7 +45,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
     String soFileName = "libhook.so";
     String so_path;
     String imageInfoName = "fakeImage";
-    String videoTmpName = "fakeVideo.mp4";
+    String videoInfoName = "fakeVideo";
     String imageInfo_path;
     Button button;
     final int SELECT_PICTURE = 0;
@@ -49,6 +56,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
     byte[] yuv420sp = null;
     List<Camera.Size> preSize = null;
     FFmpeg ffmpeg = null;
+    ProgressDialog progressDialog = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +69,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
         imageView = (ImageView) findViewById(R.id.imageView);
         runLocalRootUserCommand("setenforce 0");
         remountSystem();
+        runLocalRootUserCommand("mkdir /system/myResource");
 
         initExecutableFile();
         getCameraSupportedSize();
@@ -109,11 +118,11 @@ public class MainActivity extends Activity implements Button.OnClickListener {
             copyDataToExePath(exeFileName, exe_path);
             copyDataToExePath(soFileName, so_path);
             String result = runLocalRootUserCommand("ls /system/lib/libhook.so");
-            if (result.length() < 10) {
-                String copySoToSystem = "cat " + so_path + " > " + "/system/lib/libhook.so \n" +
+//            if (result.length() < 10) {
+            String copySoToSystem = "cat " + so_path + " > " + "/system/lib/libhook.so \n" +
                     "chmod 777 /system/lib/libhook.so \n";
-                runLocalRootUserCommand(copySoToSystem);
-            }
+            runLocalRootUserCommand(copySoToSystem);
+//            }
 
         } catch (Exception e) {
             // TODO Auto-generated catch block
@@ -139,7 +148,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 
     public String runExecutable(String args) {
         String exeCmd = "chmod 777 " + exe_path + "\n" +
-            exe_path + " " + args + "\n";
+                exe_path + " " + args + "\n";
 
         return runLocalRootUserCommand(exeCmd);
     }
@@ -187,27 +196,27 @@ public class MainActivity extends Activity implements Button.OnClickListener {
 
     @Override
     public void onClick(View v) {
-        CharSequence[] items = { "相册", "相机", "视频" };
+        CharSequence[] items = {"相册", "相机", "视频"};
         new AlertDialog.Builder(this)
-            .setTitle("选择来源")
-            .setItems(items, new AlertDialog.OnClickListener() {
-                public void onClick(DialogInterface dialog, int which) {
-                    if (which == SELECT_PICTURE) {
-                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                        intent.addCategory(Intent.CATEGORY_OPENABLE);
-                        intent.setType("image/*");
-                        startActivityForResult(Intent.createChooser(intent, "选择图片"), SELECT_PICTURE);
-                    } else if (which == SELECT_CAMER) {
-                        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                        startActivityForResult(intent, SELECT_CAMER);
-                    } else {
-                        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                        intent.setType("video/*");
-                        startActivityForResult(Intent.createChooser(intent, "选择视频"), SELECT_VIDEO);
+                .setTitle("选择来源")
+                .setItems(items, new AlertDialog.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (which == SELECT_PICTURE) {
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.addCategory(Intent.CATEGORY_OPENABLE);
+                            intent.setType("image/*");
+                            startActivityForResult(Intent.createChooser(intent, "选择图片"), SELECT_PICTURE);
+                        } else if (which == SELECT_CAMER) {
+                            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                            startActivityForResult(intent, SELECT_CAMER);
+                        } else {
+                            Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                            intent.setType("video/*");
+                            startActivityForResult(Intent.createChooser(intent, "选择视频"), SELECT_VIDEO);
+                        }
                     }
-                }
-            })
-            .create().show();
+                })
+                .create().show();
     }
 
     public void writeImageInfoToFile() {
@@ -228,7 +237,7 @@ public class MainActivity extends Activity implements Button.OnClickListener {
                 fout.close();
                 String filePath = "data/data/" + getPackageName() + "/files/" + imageInfoName;
                 String copySoToSystem =
-                    "cat " + filePath + " > " + "/system/hook \n";
+                        "cat " + filePath + " > " + "/system/hook \n";
                 runLocalRootUserCommand(copySoToSystem);
             } catch (Exception e) {
 
@@ -270,7 +279,9 @@ public class MainActivity extends Activity implements Button.OnClickListener {
                     ContentResolver cr = this.getContentResolver();
                     try {
                         if (bitmap != null)//如果不释放的话，不断取图片，将会内存不够
-                        { bitmap.recycle(); }
+                        {
+                            bitmap.recycle();
+                        }
                         InputStream inputStream = cr.openInputStream(uri);
                         bitmap = BitmapFactory.decodeStream(inputStream);
                         bitmap = scaleBitmap(bitmap, 480, 640);
@@ -290,11 +301,11 @@ public class MainActivity extends Activity implements Button.OnClickListener {
                 }
                 break;
                 case SELECT_VIDEO: {
+                    showProgress();
                     Uri uri = data.getData();
                     String oldPath = uri.getPath();
-                    String path = Environment.getExternalStorageDirectory()
-                        .getPath()
-                        .concat(oldPath.substring(oldPath.indexOf("/0/") + 2));
+                    String path = "/sdcard"
+                            .concat(oldPath.substring(oldPath.indexOf("/0/") + 2));
                     try {
                         cleanPreviousRes();
                         covertVideo(path);
@@ -382,22 +393,48 @@ public class MainActivity extends Activity implements Button.OnClickListener {
         mCamera.release();
     }
 
-    private void cleanPreviousRes() {
-        String s = runLocalRootUserCommand("rm -rf /data/data/" + getPackageName() + "/files/*.jpg");
-        runLocalRootUserCommand("rm -rf /data/data/" + getPackageName() + "/files/*.mp4");
-        Log.i(TAG, "cleanPreviousRes: " + s);
+    private void hideProgress() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            progressDialog.dismiss();
+            progressDialog = null;
+        }
     }
 
+    private void showProgress() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            return;
+        }
+        progressDialog = new ProgressDialog(this);
+        progressDialog.show(this, "提醒", "正在处理中...", true, false);
+    }
+
+    private void cleanPreviousRes() {
+        String s = runLocalRootUserCommand("rm -rf " + getFilesDir() + "/tmp/* \n");
+        runLocalRootUserCommand("rm -rf /system/myResource/* \n");
+        runLocalRootUserCommand("rm -rf " + getFilesDir() + "/fake* \n");
+        Log.i(TAG, "cleanPreviousRes: " + s);
+        File file = new File(getFilesDir(), "tmp");
+        if (!file.exists()) {
+            file.mkdir();
+        }
+    }
+
+    //把视频文件转成一系列图片
     private void covertVideo(final String path) throws Throwable {
         Log.d(TAG, "covertVideo() called with: path = [" + path + "]");
         String[] args = split(
-            "-y -i " + path + " -vf scale=480/640,setdar=3/4 -r 15 -q:v 10 " + getFilesDir() +
-                "/%03d.jpg");
+                "-y -i " + path + " -vf scale=480/640,setdar=3/4 -r 15 -q:v 10 " + getFilesDir() +
+                        "/tmp/%03d.jpg");
         ffmpeg.execute(args, new SimpleFFmpegHandler() {
             @Override
             public void onSuccess(String message) {
-                String s = runLocalRootUserCommand("ls /data/data/" + getPackageName() + "/files/*.jpg");
+                new BackgroundTask().execute();
+            }
 
+            @Override
+            public void onFailure(String message) {
+                super.onFailure(message);
+                hideProgress();
             }
         });
     }
@@ -434,6 +471,71 @@ public class MainActivity extends Activity implements Button.OnClickListener {
     private String[] split(String src) {
         String regulation = "[ \\t]+";
         return src.split(regulation);
+    }
+
+    private class BackgroundTask extends AsyncTask<Void, Void, Void> {
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                File file = new File(getFilesDir(), "tmp");
+                File[] resultFiles = file.listFiles(new JPGFileNameFilter());
+                FileOutputStream fout = openFileOutput(videoInfoName, MODE_WORLD_READABLE);
+                fout.write(longToByteArray(System.currentTimeMillis()));
+                fout.write(intToByteArray(480));
+                fout.write(intToByteArray(640));
+                fout.write(intToByteArray(resultFiles.length));
+                for (File f : resultFiles) {
+                    Bitmap bmp = null;
+                    byte[] yuv420 = null;
+
+                    InputStream inputStream = new FileInputStream(f);
+                    bmp = BitmapFactory.decodeStream(inputStream);
+                    System.out.println("the bmp toString: " + bmp);
+                    yuv420 = getNV21(bmp.getWidth(), bmp.getHeight(), bmp);
+                    fout.write(yuv420);
+
+                    if (bmp != null) {
+                        bmp.recycle();
+                        bmp = null;
+                    }
+                }
+                fout.write(intToByteArray(preSize.size()));
+                for (int i = 0; i < preSize.size(); i++) {
+                    fout.write(intToByteArray(preSize.get(i).width));
+                    fout.write(intToByteArray(preSize.get(i).height));
+                }
+                fout.close();
+                String filePath = getFilesDir() + "/" + videoInfoName;
+                String copySoToSystem =
+                        "cat " + filePath + " > " + "/system/hook \n";
+                runLocalRootUserCommand(copySoToSystem);
+
+                FileOutputStream fos = openFileOutput("index", MODE_WORLD_READABLE);
+                fos.write(resultFiles.length);
+                fos.close();
+                String indexPath = getFilesDir() + "/index";
+                String copyToSystem = "cat " + indexPath + " > " + " /system/myIndex \n" +
+                        "chmod 755 /system/myIndex \n";
+                runLocalRootUserCommand(copyToSystem);
+                runLocalRootUserCommand("chmod 777 /system/myResource \n");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            hideProgress();
+        }
+    }
+
+    private static class JPGFileNameFilter implements FilenameFilter {
+        @Override
+        public boolean accept(File dir, String name) {
+            return name.endsWith(".jpg") || name.endsWith(".Jpg");
+        }
     }
 
     private static class SimpleFFmpegHandler implements FFmpegExecuteResponseHandler {
