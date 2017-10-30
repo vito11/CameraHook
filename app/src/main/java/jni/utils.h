@@ -16,7 +16,7 @@
 #include "camera_log.h"
 #include <android/log.h>
 #ifdef ANDROID
-#include <linux/user.h>
+#include <sys/user.h>
 #else
 #include <sys/user.h>
 #endif

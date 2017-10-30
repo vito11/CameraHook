@@ -7,7 +7,7 @@
 #include <errno.h>
 #include <dirent.h>
 #ifdef ANDROID
-#include <linux/user.h>
+#include <sys/user.h>
 #else
 #include <sys/user.h>
 #endif
