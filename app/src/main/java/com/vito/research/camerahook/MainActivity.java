@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -36,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity implements Button.OnClickListener {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -304,14 +304,19 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
                     showProgress();
                     Uri uri = data.getData();
                     String oldPath = uri.getPath();
-                    String path = "/sdcard"
-                            .concat(oldPath.substring(oldPath.indexOf("/0/") + 2));
+                    Log.e(TAG, "oldPath " + oldPath);
+                    String path;
+
+
+                    path = UriUtils.getPath(this, uri);
                     try {
                         cleanPreviousRes();
                         covertVideo(path);
                     } catch (Throwable throwable) {
+                        hideProgress();
                         throwable.printStackTrace();
                     }
+
                 }
             }
 
@@ -394,24 +399,29 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
     }
 
     private void hideProgress() {
-        if (progressDialog != null && progressDialog.isShowing()) {
-            progressDialog.dismiss();
-            progressDialog = null;
-        }
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                if (progressDialog != null) {
+//                    progressDialog.dismiss();
+//                    progressDialog = null;
+//                }
+//            }
+//        });
     }
 
     private void showProgress() {
-        if (progressDialog != null && progressDialog.isShowing()) {
-            return;
-        }
-        progressDialog = new ProgressDialog(this);
-        progressDialog.show(this, "提醒", "正在处理中...", true, false);
+//        if (progressDialog != null) {
+//            return;
+//        }
+//        progressDialog = new ProgressDialog(this);
+//        progressDialog.show(this, "提醒", "正在处理中...");
     }
 
     private void cleanPreviousRes() {
         String s = runLocalRootUserCommand("rm -rf " + getFilesDir() + "/tmp/* \n");
-        runLocalRootUserCommand("rm -rf /system/myResource/* \n");
-        runLocalRootUserCommand("rm -rf " + getFilesDir() + "/fake* \n");
+//        runLocalRootUserCommand("rm -rf /system/myResource/* \n");
+//        runLocalRootUserCommand("rm -rf " + getFilesDir() + "/fake* \n");
         Log.i(TAG, "cleanPreviousRes: " + s);
         File file = new File(getFilesDir(), "tmp");
         if (!file.exists()) {
@@ -428,6 +438,7 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
         ffmpeg.execute(args, new SimpleFFmpegHandler() {
             @Override
             public void onSuccess(String message) {
+                super.onSuccess(message);
                 new BackgroundTask().execute();
             }
 
@@ -480,7 +491,7 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
                 File file = new File(getFilesDir(), "tmp");
                 File[] resultFiles = file.listFiles(new JPGFileNameFilter());
                 FileOutputStream fout = openFileOutput(videoInfoName, MODE_WORLD_READABLE);
-                fout.write(longToByteArray(System.currentTimeMillis()));
+                fout.write(intToByteArray(UUID.randomUUID().hashCode()));
                 fout.write(intToByteArray(480));
                 fout.write(intToByteArray(640));
                 fout.write(intToByteArray(resultFiles.length));
@@ -492,6 +503,7 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
                     bmp = BitmapFactory.decodeStream(inputStream);
                     System.out.println("the bmp toString: " + bmp);
                     yuv420 = getNV21(bmp.getWidth(), bmp.getHeight(), bmp);
+                    fout.write(yuv420.length);
                     fout.write(yuv420);
 
                     if (bmp != null) {
@@ -510,14 +522,13 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
                         "cat " + filePath + " > " + "/system/hook \n";
                 runLocalRootUserCommand(copySoToSystem);
 
-                FileOutputStream fos = openFileOutput("index", MODE_WORLD_READABLE);
-                fos.write(resultFiles.length);
-                fos.close();
-                String indexPath = getFilesDir() + "/index";
-                String copyToSystem = "cat " + indexPath + " > " + " /system/myIndex \n" +
-                        "chmod 755 /system/myIndex \n";
-                runLocalRootUserCommand(copyToSystem);
-                runLocalRootUserCommand("chmod 777 /system/myResource \n");
+//                FileOutputStream fos = openFileOutput("index", MODE_WORLD_READABLE);
+//                fos.write(resultFiles.length);
+//                fos.close();
+//                String indexPath = getFilesDir() + "/index";
+//                String copyToSystem = "cat " + indexPath + " > " + " /system/myIndex \n" +
+//                        "chmod 755 /system/myIndex \n";
+//                runLocalRootUserCommand(copyToSystem);
 
             } catch (Exception e) {
                 e.printStackTrace();
