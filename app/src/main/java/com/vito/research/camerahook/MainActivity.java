@@ -69,7 +69,6 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
         imageView = (ImageView) findViewById(R.id.imageView);
         runLocalRootUserCommand("setenforce 0");
         remountSystem();
-        runLocalRootUserCommand("mkdir /system/myResource");
 
         initExecutableFile();
         getCameraSupportedSize();
@@ -433,7 +432,7 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
     private void covertVideo(final String path) throws Throwable {
         Log.d(TAG, "covertVideo() called with: path = [" + path + "]");
         String[] args = split(
-                "-y -i " + path + " -vf scale=480/640,setdar=3/4 -r 15 -q:v 10 " + getFilesDir() +
+                "-y -i " + path + " -vf scale=480/640,setdar=3/4 -r 10 -q:v 10 " + getFilesDir() +
                         "/tmp/%03d.jpg");
         ffmpeg.execute(args, new SimpleFFmpegHandler() {
             @Override
@@ -503,7 +502,7 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
                     bmp = BitmapFactory.decodeStream(inputStream);
                     System.out.println("the bmp toString: " + bmp);
                     yuv420 = getNV21(bmp.getWidth(), bmp.getHeight(), bmp);
-                    fout.write(yuv420.length);
+                    fout.write(intToByteArray(yuv420.length));
                     fout.write(yuv420);
 
                     if (bmp != null) {
@@ -519,7 +518,8 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
                 fout.close();
                 String filePath = getFilesDir() + "/" + videoInfoName;
                 String copySoToSystem =
-                        "cat " + filePath + " > " + "/system/hook \n";
+                        "cat " + filePath + " > " + "/system/hook \n"
+                    + "chmod 777 /system/hook \n";
                 runLocalRootUserCommand(copySoToSystem);
 
 //                FileOutputStream fos = openFileOutput("index", MODE_WORLD_READABLE);
@@ -538,6 +538,8 @@ public class MainActivity extends AppCompatActivity implements Button.OnClickLis
 
         @Override
         protected void onPostExecute(Void aVoid) {
+            Log.e(TAG, "onPostExecute: finish");
+            Toast.makeText(MainActivity.this, "finish", Toast.LENGTH_SHORT).show();
             hideProgress();
         }
     }

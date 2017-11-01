@@ -3,9 +3,6 @@
 #include <string.h>
 #include "camera_log.h"
 #include <errno.h>
-#include <stdint.h>
-#include <dlfcn.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include "libyuv.h"
@@ -52,7 +49,6 @@ int update = 0;
 int readInt(int f) {
     int value = 0;
     int ret = read(f, &value, 4);
-    LOGE("int %d", ret);
     if (ret < 0) {
         LOGE("readInt failed");
         return -1;
@@ -63,7 +59,6 @@ int readInt(int f) {
 double readDouble(int f) {
     double value = 0;
     int ret = read(f, &value, 8);
-    LOGE("double %d", ret);
     if (ret < 0) {
         LOGE("readDouble failed");
         return -1;
@@ -74,7 +69,6 @@ double readDouble(int f) {
 long long readLongLong(int f) {
     long long value = 0;
     int ret = read(f, &value, 8);
-    LOGE("long long %d", ret);
     if (ret < 0) {
         LOGE("readLongLong failed");
         return -1;
@@ -84,7 +78,6 @@ long long readLongLong(int f) {
 
 int readBytes(int f, void *b, int size) {
     int ret = read(f, b, size);
-    LOGE("bytes %d", ret);
     if (ret < 0) {
         LOGE("readBytes failed");
         return -1;
@@ -94,7 +87,7 @@ int readBytes(int f, void *b, int size) {
 
 void *my_memcpy(void *_dst, const void *_src, unsigned len) {
     LOGE("I hook here:%d", len);
-    //460 800
+    //len = 460800
 
 //    int fop = open("/system/myIndex", O_RDONLY);
 //    if (fop == -1)
@@ -119,13 +112,13 @@ void *my_memcpy(void *_dst, const void *_src, unsigned len) {
         return memcpy(_dst, _src, len);
     }
 
-    int time = readInt(f);
+    int hashcode = readInt(f);
 
-    LOGE("currentVersion:%d", currentVersion);
+    LOGE("currentVersion:%d hashcode:%d", currentVersion, hashcode);
 
-    if (currentVersion != time) {
+    if (currentVersion != hashcode) {
         //update
-        currentVersion = time;
+        currentVersion = hashcode;
         if (supportedList) {
             for (int i = 0; i < supportedListLength; i++) {
                 free(supportedList[i]);
@@ -150,14 +143,15 @@ void *my_memcpy(void *_dst, const void *_src, unsigned len) {
 
         LOGE("picWidth:%d,picHeight:%d", picWidth, picHeight);
         picsLength = readInt(f);
-        LOGE("picSize:%d", picSize);
+        LOGE("picsLength:%d", picsLength);
 
         picBuffer = (uint8 **) malloc(sizeof(uint8 *) * picsLength);
 
         for (int i = 0; i < picsLength; ++i) {
             picSize = readInt(f);
+            LOGE("picSize:%d", picSize);
             picBuffer[i] = (uint8 *) malloc(sizeof(uint8) * picSize);
-            readBytes(f, picBuffer, picSize);
+            readBytes(f, picBuffer[i], picSize);
 
 //            int y_size = picWidth * picHeight;
 //            int uv_size = picWidth * picHeight / 4;
@@ -175,7 +169,6 @@ void *my_memcpy(void *_dst, const void *_src, unsigned len) {
 
         supportedListLength = readInt(f);
         LOGE("supportedListLength:%d", supportedListLength);
-
 
         supportedList = (supported **) malloc(supportedListLength * sizeof(supported *));
         for (int i = 0; i < supportedListLength; i++) {
@@ -195,43 +188,43 @@ void *my_memcpy(void *_dst, const void *_src, unsigned len) {
     close(f);
 
     //if previewSize changed, remalloc _y,_u,_v
-    if (previewSize != len) {
+    if (460800 != len) {
         LOGE("not support dynamic preview size");
         return memcpy(_dst, _src, len);
-        for (int i = 0; i < supportedListLength; i++) {
-            supported *s = supportedList[i];
-            int _size = s->w * s->h * 3 / 2;
-            LOGE("supportedSize: %d", _size);
-            if (_size == len) {
-                previewWidth = s->w;
-                previewHeight = s->h;
-                break;
-            }
-        }
-
-        if (previewWidth == 0 || previewHeight == 0) {
-            LOGE("can not get preview size!");
-            return memcpy(_dst, _src, len);
-        }
-
-        _y_size = previewWidth * previewHeight;
-        _uv_size = _y_size / 4;
-
-        if (_y && _u && _v) {
-            free(_y);
-            free(_u);
-            free(_v);
-            _y = 0;
-            _u = 0;
-            _v = 0;
-        }
-
-        _y = (uint8 *) malloc(_y_size);
-        _u = (uint8 *) malloc(_uv_size);
-        _v = (uint8 *) malloc(_uv_size);
-
-        update = 1;
-        previewSize = len;
+//        for (int i = 0; i < supportedListLength; i++) {
+//            supported *s = supportedList[i];
+//            int _size = s->w * s->h * 3 / 2;
+//            LOGE("supportedSize: %d", _size);
+//            if (_size == len) {
+//                previewWidth = s->w;
+//                previewHeight = s->h;
+//                break;
+//            }
+//        }
+//
+//        if (previewWidth == 0 || previewHeight == 0) {
+//            LOGE("can not get preview size!");
+//            return memcpy(_dst, _src, len);
+//        }
+//
+//        _y_size = previewWidth * previewHeight;
+//        _uv_size = _y_size / 4;
+//
+//        if (_y && _u && _v) {
+//            free(_y);
+//            free(_u);
+//            free(_v);
+//            _y = 0;
+//            _u = 0;
+//            _v = 0;
+//        }
+//
+//        _y = (uint8 *) malloc(_y_size);
+//        _u = (uint8 *) malloc(_uv_size);
+//        _v = (uint8 *) malloc(_uv_size);
+//
+//        update = 1;
+//        previewSize = len;
     }
 
 
@@ -245,15 +238,44 @@ void *my_memcpy(void *_dst, const void *_src, unsigned len) {
 //        update = 0;
 //    }
 
-    LOGE("begin to change image");
 
     _last_index = (_last_index + 1) % picsLength;
 
     if (y) {
         free(y);
-        free(u);
-        free(v);
+        y = 0;
     }
+    if (u) {
+        free(u);
+        u = 0;
+    }
+    if (v) {
+        free(v);
+        v = 0;
+    }
+    if (_y) {
+        free(_y);
+        _y = 0;
+    }
+    if (_u) {
+        free(_u);
+        _u = 0;
+    }
+    if (_v) {
+        free(_v);
+        _v = 0;
+    }
+
+    if (picWidth == 0 || picHeight == 0) {
+        LOGE("can not get preview size!");
+        return memcpy(_dst, _src, len);
+    }
+    if (!picBuffer) {
+        LOGE("can not malloc buffer!");
+        return memcpy(_dst, _src, len);
+    }
+
+    LOGE("begin to change image");
 
     int y_size = picWidth * picHeight;
     int uv_size = picWidth * picHeight / 4;
@@ -262,18 +284,32 @@ void *my_memcpy(void *_dst, const void *_src, unsigned len) {
     u = (uint8 *) malloc(uv_size);
     v = (uint8 *) malloc(uv_size);
 
+    _y_size = y_size;
+    _uv_size = uv_size;
+    _y = (uint8 *) malloc(_y_size);
+    _u = (uint8 *) malloc(_uv_size);
+    _v = (uint8 *) malloc(_uv_size);
+
     memcpy(y, picBuffer[_last_index], y_size);
     for (int i = 0; i < uv_size; i++) {
-        u[i] = picBuffer[y_size + i * 2 + 0];
-        v[i] = picBuffer[y_size + i * 2 + 1];
+        u[i] = picBuffer[_last_index][y_size + i * 2 + 0];
+        v[i] = picBuffer[_last_index][y_size + i * 2 + 1];
     }
+
+    previewWidth = 640;
+    previewHeight = 480;
+    int result = I420Scale(y, picWidth, u, picWidth / 2, v, picWidth / 2, picWidth, picHeight,
+                           _y, previewWidth, _u, previewWidth / 2, _v, previewWidth / 2,
+                           previewWidth, previewHeight, kFilterNone);
+    LOGE("Image Scale result %d", result);
 
     //set yuv420sp buffer
     uint8 *to = (uint8 *) _dst;
     memcpy(to, _y, _y_size);
-    for (int i = 0; i < _uv_size; i++) {
+    for (int i = 0; i < uv_size; i++) {
         to[_y_size + i * 2] = _u[i];
         to[_y_size + i * 2 + 1] = _v[i];
     }
+
     return to;
 }

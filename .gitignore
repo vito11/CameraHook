@@ -8,3 +8,6 @@
 /captures
 .externalNativeBuild
 .idea
+/app/src/main/assets/injector
+/app/src/main/assets/libhook.so
+gradle.properties
