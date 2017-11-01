@@ -1,26 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.vito.research.camerahook.MainActivity"
-    android:orientation="vertical"
-    android:gravity="center_horizontal">
+    android:fillViewport="true">
 
-    <ImageView
-        android:id="@+id/imageView"
-        android:layout_width="fill_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:src="@color/colorAccent" />
-
-    <android.support.v7.widget.AppCompatButton
-        android:id="@+id/button2"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="5dp"
-        android:text="设置一张伪造的照片" />
+        android:gravity="center"
+        android:orientation="vertical"
+        tools:context="me.tino.research.camerahook.MainActivity">
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/fpswrapper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/fps"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:hint="帧率(1~30)"
+                android:inputType="numberSigned"
+                android:text="15" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/qualitywrapper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/quality"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:hint="质量(2~31)"
+                android:inputType="numberSigned"
+                android:text="10" />
+
+        </android.support.design.widget.TextInputLayout>
+
+        <android.support.v7.widget.AppCompatButton
+            android:id="@+id/setvideo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp"
+            android:text="设置一张伪造的视频" />
 
 
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>
