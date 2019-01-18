@@ -7,12 +7,15 @@ public void onPreviewFrame(byte[] data, Camera camera) {
 }
 ```
 For example, you can use this tool to change any third-party QR code scanner result by replacing the camera data with a picture set by yourself.
+
 It is just a prototype and the code may be ugly.
 
 ## How to try
 You should use Android studio to build this project.
+
 To use this app, devices must be root.
-You need to install another app which obtain camera data from ```onPreviewFrame``` to verify if CameraHook works well, or you can write a verification app by yourself. 
+
+You need to install another app which gets camera data via ```onPreviewFrame``` to verify if CameraHook works well.
 
 
 ## Supported platform
