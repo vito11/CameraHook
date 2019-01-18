@@ -16,8 +16,11 @@ You should use Android studio to build this project.
 
 To use this app, devices must be root.
 
-You need to install another app which gets camera data via ```onPreviewFrame``` to verify if CameraHook works well.
+You need to install another app which gets camera data via ```onPreviewFrame``` to verify if CameraHook works well. 
 
+For example, **CustomizedCameraPreview** is another prototype of mine which randers ```onPreviewFrame``` data to the screen is a good verification app for CameraHook (https://github.com/vito11/CustomizedCameraPreview)
+
+**Please note that CustomizedCameraPreview is a custumized preview, so both the data and the preview shown on the screen can be changed by CameraHook, and Most third-party QR code scanners use system preview, CameraHook only change the data of these scanners and will not change the preview on the screen**
 
 ## Supported platform
 Android 2.3 - 4.4
